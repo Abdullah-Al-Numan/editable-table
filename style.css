@@ -84,7 +84,7 @@ mark {
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 600px; /* Minimum width for horizontal scrolling */
+    min-width: 700px; /* Increased for date column */
 }
 
 th, td {
@@ -103,6 +103,34 @@ th {
 
 td[contenteditable="true"] {
     background-color: #fffacd;
+}
+
+/* Date field specific styles */
+td[data-field="date"] {
+    cursor: pointer;
+    position: relative;
+    user-select: none; /* Prevent text selection */
+}
+
+td[data-field="date"]:hover {
+    background-color: #e8f5e8;
+}
+
+td[data-field="date"]:focus {
+    background-color: #fff5b7;
+    outline: 2px solid #4CAF50;
+    outline-offset: -2px;
+}
+
+td[data-field="date"]::after {
+    content: "📅";
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    opacity: 0.7;
+    pointer-events: none;
 }
 
 button {
@@ -129,6 +157,135 @@ button:hover {
 #addRow {
     display: block;
     margin: 0 auto 20px auto;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.3s ease-out;
+}
+
+.modal-header {
+    padding: 20px 20px 10px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+    text-decoration: none;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-body p {
+    margin-bottom: 15px;
+    color: #555;
+}
+
+.record-details {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 4px;
+    border-left: 4px solid #4CAF50;
+}
+
+.record-details p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.record-details strong {
+    color: #333;
+}
+
+.modal-footer {
+    padding: 15px 20px 20px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-danger {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.btn-danger:hover {
+    background-color: #e53935;
+}
+
+.btn-secondary {
+    background-color: #757575;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.btn-secondary:hover {
+    background-color: #616161;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 /* Pagination styles */
@@ -196,17 +353,6 @@ button:hover {
     animation: slideIn 0.3s ease-out;
 }
 
-@keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
 /* Enhanced table styles */
 td[contenteditable="true"]:focus {
     background-color: #fff5b7;
@@ -261,7 +407,7 @@ tr:hover {
     
     table {
         font-size: 14px;
-        min-width: 500px;
+        min-width: 600px;
     }
     
     th, td {
@@ -284,5 +430,20 @@ tr:hover {
     
     .page-info, .rows-per-page {
         text-align: center;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .btn-danger,
+    .btn-secondary {
+        width: 100%;
+        margin-bottom: 10px;
     }
 }

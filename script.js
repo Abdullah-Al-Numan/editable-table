@@ -10,13 +10,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     const clearSearchBtn = document.getElementById('clearSearch');
     
+    // Modal elements
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmDeleteBtn = document.getElementById('confirmDelete');
+    const cancelDeleteBtn = document.getElementById('cancelDelete');
+    const closeModalBtn = document.querySelector('.close');
+    const recordDetails = document.getElementById('recordDetails');
+    
+    // Date picker
+    const hiddenDatePicker = document.getElementById('hiddenDatePicker');
+    
     // API Configuration
-    const API_BASE_URL = 'https://jsonplaceholder.typicode.com'; // Example API
+    const API_BASE_URL = 'https://jsonplaceholder.typicode.com';
     let tableData = [];
     let filteredData = [];
     let currentPage = 1;
     let rowsPerPage = 10;
     let searchTerm = '';
+    let currentDeleteId = null;
+    let currentEditingDateCell = null; // Track which date cell is being edited
 
     // Fetch data from API on page load
     fetchTableData();
@@ -71,6 +83,57 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Modal event listeners
+    confirmDeleteBtn.addEventListener('click', function() {
+        if (currentDeleteId !== null) {
+            performDelete(currentDeleteId);
+            closeModal();
+        }
+    });
+
+    cancelDeleteBtn.addEventListener('click', function() {
+        closeModal();
+    });
+
+    closeModalBtn.addEventListener('click', function() {
+        closeModal();
+    });
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target === confirmModal) {
+            closeModal();
+        }
+    });
+
+    // Date picker event listener - Fixed
+    hiddenDatePicker.addEventListener('change', function() {
+        if (currentEditingDateCell && this.value) {
+            const formattedDate = formatDateForDisplay(this.value);
+            currentEditingDateCell.textContent = formattedDate;
+            currentEditingDateCell.innerHTML = formattedDate; // Remove any HTML highlighting
+            
+            // Reset visual feedback
+            currentEditingDateCell.style.backgroundColor = '';
+            currentEditingDateCell.style.outline = '';
+            
+            // Handle the cell edit
+            handleCellEdit(currentEditingDateCell);
+            
+            // Clear the current editing cell
+            currentEditingDateCell = null;
+        }
+    });
+
+    // Close date picker when clicking outside or pressing escape
+    hiddenDatePicker.addEventListener('blur', function() {
+        if (currentEditingDateCell) {
+            currentEditingDateCell.style.backgroundColor = '';
+            currentEditingDateCell.style.outline = '';
+            currentEditingDateCell = null;
+        }
+    });
+
     // Perform search and filter data
     function performSearch() {
         if (searchTerm === '') {
@@ -79,11 +142,11 @@ document.addEventListener('DOMContentLoaded', function() {
             filteredData = tableData.filter(item => {
                 return item.name.toLowerCase().includes(searchTerm) ||
                        item.age.toString().includes(searchTerm) ||
-                       item.country.toLowerCase().includes(searchTerm);
+                       item.country.toLowerCase().includes(searchTerm) ||
+                       item.date.toLowerCase().includes(searchTerm);
             });
         }
         
-        // Reset to first page when searching
         currentPage = 1;
         renderTable();
         updatePagination();
@@ -103,8 +166,9 @@ document.addEventListener('DOMContentLoaded', function() {
             tableData = users.map(user => ({
                 id: user.id,
                 name: user.name,
-                age: Math.floor(Math.random() * 50) + 20, // Random age since API doesn't provide it
-                country: user.address.city || 'Unknown'
+                age: Math.floor(Math.random() * 50) + 20,
+                country: user.address.city || 'Unknown',
+                date: generateRandomDate()
             }));
             
             filteredData = [...tableData];
@@ -118,6 +182,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Generate random date for demo purposes
+    function generateRandomDate() {
+        const start = new Date(2020, 0, 1);
+        const end = new Date();
+        const randomDate = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+        return formatDateForDisplay(randomDate.toISOString().split('T')[0]);
+    }
+
+    // Format date for display (DD/MM/YYYY)
+    function formatDateForDisplay(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
+    // Format date for input (YYYY-MM-DD)
+    function formatDateForInput(displayDate) {
+        if (!displayDate) return '';
+        const parts = displayDate.split('/');
+        if (parts.length === 3) {
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return '';
+    }
+
     // Render table with pagination
     function renderTable() {
         table.innerHTML = '';
@@ -127,9 +219,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const pageData = filteredData.slice(startIndex, endIndex);
         
         if (pageData.length === 0 && searchTerm !== '') {
-            table.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999; font-style: italic;">No results found for your search</td></tr>';
+            table.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999; font-style: italic;">No results found for your search</td></tr>';
         } else if (pageData.length === 0) {
-            table.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999; font-style: italic;">No data available</td></tr>';
+            table.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999; font-style: italic;">No data available</td></tr>';
         } else {
             pageData.forEach(item => {
                 const row = createTableRow(item);
@@ -149,11 +241,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const highlightedName = highlightSearchTerm(data.name.toString(), searchTerm);
         const highlightedAge = highlightSearchTerm(data.age.toString(), searchTerm);
         const highlightedCountry = highlightSearchTerm(data.country.toString(), searchTerm);
+        const highlightedDate = highlightSearchTerm(data.date.toString(), searchTerm);
         
         row.innerHTML = `
             <td contenteditable="true" data-field="name">${highlightedName}</td>
             <td contenteditable="true" data-field="age">${highlightedAge}</td>
             <td contenteditable="true" data-field="country">${highlightedCountry}</td>
+            <td contenteditable="true" data-field="date">${highlightedDate}</td>
             <td><button class="deleteRow">Delete</button></td>
         `;
         
@@ -194,12 +288,10 @@ document.addEventListener('DOMContentLoaded', function() {
         let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
         let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
         
-        // Adjust start page if we're near the end
         if (endPage - startPage < maxVisiblePages - 1) {
             startPage = Math.max(1, endPage - maxVisiblePages + 1);
         }
         
-        // Add first page and ellipsis if needed
         if (startPage > 1) {
             addPageButton(1);
             if (startPage > 2) {
@@ -210,12 +302,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Add page numbers
         for (let i = startPage; i <= endPage; i++) {
             addPageButton(i);
         }
         
-        // Add last page and ellipsis if needed
         if (endPage < totalPages) {
             if (endPage < totalPages - 1) {
                 const ellipsis = document.createElement('span');
@@ -232,6 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const button = document.createElement('button');
         button.textContent = pageNum;
         button.className = pageNum === currentPage ? 'active' : '';
+        button.style.marginRight = '4px';
         button.addEventListener('click', function() {
             currentPage = pageNum;
             renderTable();
@@ -262,20 +353,49 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add new row functionality
     function addNewRow() {
         const newId = Math.max(...tableData.map(item => item.id), 0) + 1;
+        const today = new Date();
         const newData = {
             id: newId,
             name: 'New Name',
             age: 25,
-            country: 'Country'
+            country: 'Country',
+            date: formatDateForDisplay(today.toISOString().split('T')[0])
         };
         
-        tableData.unshift(newData); // Add to beginning
-        
-        // Re-apply search filter
+        tableData.unshift(newData);
         performSearch();
-        
-        // Call API to add new record
         updateRecordInAPI(newData, 'POST');
+    }
+
+    // Show confirmation modal
+    function showConfirmModal(id, recordData) {
+        currentDeleteId = id;
+        
+        // Populate record details
+        recordDetails.innerHTML = `
+            <p><strong>Name:</strong> ${recordData.name}</p>
+            <p><strong>Age:</strong> ${recordData.age}</p>
+            <p><strong>Country:</strong> ${recordData.country}</p>
+            <p><strong>Date:</strong> ${recordData.date}</p>
+        `;
+        
+        confirmModal.style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    // Close modal
+    function closeModal() {
+        confirmModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        currentDeleteId = null;
+    }
+
+    // Perform actual delete
+    function performDelete(id) {
+        // Remove from local data
+        tableData = tableData.filter(item => item.id !== id);
+        performSearch();
+        deleteRecordFromAPI(id);
     }
 
     // Attach delete event to button
@@ -283,40 +403,155 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', function() {
             const row = this.closest('tr');
             const id = parseInt(row.dataset.id);
+            const recordData = tableData.find(item => item.id === id);
             
-            // Remove from local data
-            tableData = tableData.filter(item => item.id !== id);
-            
-            // Re-apply search filter
-            performSearch();
-            
-            // Call API to delete record
-            deleteRecordFromAPI(id);
+            if (recordData) {
+                showConfirmModal(id, recordData);
+            }
         });
     }
 
-    // Attach edit events to editable cells
+    // Attach edit events to editable cells - Fixed for date handling
     function attachEditEvents(row) {
         const editableCells = row.querySelectorAll('td[contenteditable="true"]');
         
         editableCells.forEach(cell => {
+            // Handle click event for date cells
+            cell.addEventListener('click', function(e) {
+                if (this.dataset.field === 'date') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.blur(); // Remove focus from the cell
+                    openDatePicker(this);
+                }
+            });
+
             cell.addEventListener('focus', function() {
-                // Remove highlighting when editing
+                // For date fields, prevent focus and open picker instead
+                if (this.dataset.field === 'date') {
+                    this.blur();
+                    openDatePicker(this);
+                    return;
+                }
+                
+                // Remove highlighting when editing for non-date fields
                 const text = this.textContent;
                 this.innerHTML = text;
             });
             
             cell.addEventListener('blur', function() {
-                handleCellEdit(this);
+                if (this.dataset.field !== 'date') {
+                    handleCellEdit(this);
+                }
             });
             
             cell.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
+                if (this.dataset.field === 'date') {
+                    // For date fields, open picker on Enter or Space
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.blur();
+                        openDatePicker(this);
+                    }
+                    // Prevent any other key input for date fields
+                    else if (e.key !== 'Tab') {
+                        e.preventDefault();
+                    }
+                } else {
+                    // For other fields, submit on Enter
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.blur();
+                    }
+                }
+            });
+
+            // Prevent typing in date fields completely
+            cell.addEventListener('input', function(e) {
+                if (this.dataset.field === 'date') {
                     e.preventDefault();
-                    this.blur();
+                    // Restore original content if someone tries to type
+                    const id = parseInt(this.closest('tr').dataset.id);
+                    const item = tableData.find(item => item.id === id);
+                    if (item) {
+                        this.textContent = item.date;
+                        this.innerHTML = item.date;
+                    }
+                    return false;
+                }
+            });
+
+            // Prevent paste in date fields
+            cell.addEventListener('paste', function(e) {
+                if (this.dataset.field === 'date') {
+                    e.preventDefault();
+                    return false;
                 }
             });
         });
+    }
+
+    // Open date picker for date fields
+    function openDatePicker(dateCell) {
+        // Prevent multiple date pickers from opening
+        if (currentEditingDateCell) {
+            currentEditingDateCell.style.backgroundColor = '';
+            currentEditingDateCell.style.outline = '';
+        }
+        
+        // Set the current editing cell
+        currentEditingDateCell = dateCell;
+        
+        // Get current date value and convert to input format
+        const currentDate = dateCell.textContent.trim();
+        const inputDate = formatDateForInput(currentDate);
+        
+        // Set the hidden date picker value
+        hiddenDatePicker.value = inputDate || '';
+        
+        // Add visual feedback immediately
+        dateCell.style.backgroundColor = '#fff5b7';
+        dateCell.style.outline = '2px solid #4CAF50';
+        dateCell.style.outlineOffset = '-2px';
+        
+        // Make the date picker temporarily visible and functional
+        hiddenDatePicker.style.position = 'fixed';
+        hiddenDatePicker.style.top = '50%';
+        hiddenDatePicker.style.left = '50%';
+        hiddenDatePicker.style.transform = 'translate(-50%, -50%)';
+        hiddenDatePicker.style.opacity = '0';
+        hiddenDatePicker.style.pointerEvents = 'auto';
+        hiddenDatePicker.style.zIndex = '9999';
+        
+        // Focus and trigger the date picker
+        setTimeout(() => {
+            hiddenDatePicker.focus();
+            if (hiddenDatePicker.showPicker) {
+                hiddenDatePicker.showPicker();
+            } else {
+                hiddenDatePicker.click();
+            }
+        }, 1000);
+
+        // Hide the date picker again after a short delay
+        setTimeout(() => {
+            hiddenDatePicker.style.position = 'fixed';
+            hiddenDatePicker.style.top = '-100px';
+            hiddenDatePicker.style.left = '-100px';
+            hiddenDatePicker.style.opacity = '0';
+            hiddenDatePicker.style.pointerEvents = 'none';
+            hiddenDatePicker.style.zIndex = '-1';
+        }, 1000);
+        
+        // Fallback: Remove visual feedback after 5 seconds if no date is selected
+        setTimeout(() => {
+            if (dateCell === currentEditingDateCell) {
+                dateCell.style.backgroundColor = '';
+                dateCell.style.outline = '';
+                currentEditingDateCell = null;
+            }
+        }, 50000);
     }
 
     // Handle cell edit
@@ -330,7 +565,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const item = tableData.find(item => item.id === id);
         
         if (item) {
-            const processedValue = field === 'age' ? parseInt(newValue) || 0 : newValue;
+            let processedValue;
+            if (field === 'age') {
+                processedValue = parseInt(newValue) || 0;
+            } else {
+                processedValue = newValue;
+            }
+            
             item[field] = processedValue;
             
             // Re-apply search filter to update filtered data
@@ -355,7 +596,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     age: data.age,
                     address: {
                         city: data.country
-                    }
+                    },
+                    date: data.date
                 })
             });
             
@@ -393,7 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // UI Helper Functions
     function showLoadingState() {
-        table.innerHTML = '<tr><td colspan="4" style="text-align: center;">Loading data...</td></tr>';
+        table.innerHTML = '<tr><td colspan="5" style="text-align: center;">Loading data...</td></tr>';
         pageInfo.textContent = 'Loading...';
     }
 
