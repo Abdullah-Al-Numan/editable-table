@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editable Table</title>
+
+    <!-- Style CSS -->
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Editable Table</h1>
+        
+        <!-- Search functionality -->
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search by name, age, or country..." />
+            <button id="clearSearch">Clear</button>
+        </div>
+        
+        <button id="addRow">Add Row</button>
+        
+        <div class="table-container">
+            <table id="editableTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Country</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be loaded from API -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="pagination-container">
+            <div class="rows-per-page">
+                <label for="rowsPerPage">Rows per page:</label>
+                <select id="rowsPerPage">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            
+            <div class="page-info" id="pageInfo">
+                Showing 0 to 0 of 0 entries
+            </div>
+            
+            <div class="pagination" id="pagination">
+                <button id="prevPage" disabled>Previous</button>
+                <span id="pageNumbers"></span>
+                <button id="nextPage" disabled>Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script JS -->
+    <script src="./script.js"></script>
+</body>
+</html>
